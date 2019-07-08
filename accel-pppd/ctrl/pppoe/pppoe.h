@@ -48,6 +48,8 @@
 #define SECRET_LENGTH 16
 #define COOKIE_LENGTH 24
 
+#define SERVICE_NAMES_CNT 32
+
 struct pppoe_tag_t
 {
 	struct list_head entry;
@@ -102,7 +104,7 @@ struct pppoe_serv_t
 };
 
 extern int conf_verbose;
-extern char *conf_service_name[255];
+extern char *conf_service_name[];
 extern int conf_accept_any_service;
 extern char *conf_ac_name;
 extern char *conf_pado_delay;

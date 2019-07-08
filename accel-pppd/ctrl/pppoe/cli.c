@@ -116,8 +116,7 @@ static void set_pado_delay_help(char * const *f, int f_cnt, void *cli)
 
 static void set_service_name_help(char * const *f, int f_cnt, void *cli)
 {
-	cli_send(cli, "pppoe set Service-Name <name> - set Service-Name to respond\r\n");
-	cli_send(cli, "pppoe set Service-Name * - respond with client's Service-Name\r\n");
+	cli_send(cli, "pppoe set Service-Name <*|name[,name1,[name2[,...]]]> - set Service-Name values\r\n");
 }
 
 static void set_ac_name_help(char * const *f, int f_cnt, void *cli)
@@ -167,19 +166,16 @@ static int show_pado_delay_exec(const char *cmd, char * const *f, int f_cnt, voi
 
 static int show_service_name_exec(const char *cmd, char * const *f, int f_cnt, void *cli)
 {
+	int i;
+
 	if (f_cnt != 3)
 		return CLI_CMD_SYNTAX;
 
-	if (conf_service_name[0]) {
-		int i = 0;
-		do {
-		    cli_sendv(cli, "%s", conf_service_name[i]);
-		    i++;
-		    if (conf_service_name[i]) { cli_sendv(cli, ","); }
-		} while(conf_service_name[i]);
-		cli_sendv(cli, "\r\n");
-	} else
-		cli_sendv(cli, "*\r\n");
+	for (i = 0; conf_service_name[i]; i++)
+		cli_sendv(cli, i ? ",%s" : "%s", conf_service_name[i]);
+	if (conf_accept_any_service || conf_service_name[0] == NULL)
+		cli_sendv(cli, i ? ",%s" : "%s", "*");
+	cli_sendv(cli, "\r\n");
 
 	return CLI_CMD_OK;
 }
@@ -222,29 +218,27 @@ static int set_pado_delay_exec(const char *cmd, char * const *f, int f_cnt, void
 
 static int set_service_name_exec(const char *cmd, char * const *f, int f_cnt, void *cli)
 {
+	char *opt, *end, *next;
+	int i = 0;
+
 	if (f_cnt != 4)
 		return CLI_CMD_SYNTAX;
 
-	if (conf_service_name[0]) {
-		int i = 0;
-		do {
-		    _free(conf_service_name[i]);
-		    i++;
-		} while(conf_service_name[i]);
-		conf_service_name[0] = NULL;
+	conf_accept_any_service = 0;
+	for (opt = f[3]; opt && *opt && i < SERVICE_NAMES_CNT; opt = next) {
+		end = (next = strpbrk(opt, ",")) ? next++ : opt + strlen(opt);
+		if (end == opt)
+			continue;
+		if (strncmp(opt, "*", end - opt) == 0) {
+			conf_accept_any_service = 1;
+			continue;
+		}
+		_free(conf_service_name[i]);
+		conf_service_name[i++] = _strndup(opt, end - opt);
 	}
-	if (!strcmp(f[3], "*"))
-		conf_service_name[0] = NULL;
-	else {
-	    char *conf_service_name_string = _strdup(f[3]);
-	    char *p = strtok (conf_service_name_string, ",");
-	    int i = 0;
-	    while (p != NULL && i<255) {
-		conf_service_name[i++] = _strdup(p);
-		p = strtok(NULL, ",");
-	    }
-	    conf_service_name[i] = NULL;
-	    _free(conf_service_name_string);
+	while (i <= SERVICE_NAMES_CNT && conf_service_name[i]) {
+		_free(conf_service_name[i]);
+		conf_service_name[i++] = NULL;
 	}
 
 	return CLI_CMD_OK;

@@ -541,12 +541,14 @@ parameter specifies limit of PADI packets to reply on this interface in 1 second
 .BI "ac-name=" ac-name
 Specifies AC-Name tag value. If absent tag will not be sent.
 .TP
-.BI "service-name=" service-name
-Specifies Service-Name to respond. If absent any Service-Name is acceptable and client's Service-Name will be sent back.
-.TP
-.BI "accept-any-service=" n
-If service-name specified still will answer with service names, but accepts any service name in PADR request. Useful 
-for scenarios, where selection of PPPoE done by client, based on service names in PADO.
+.BI "service-name=" *|name[,name1,[name2[,...]]]
+Specifies list of Service-Name tag values for client's PADI/PADR service name matching and sending back.
+Client's PADI/PADR requests with empty service name will be accepted and replied with all the list values excluding special value "
+.B *
+", used for any service name matching and accepting.
+If client's service name is not in list, PADI will be ignored and PADR dropped unless special value "
+.B *
+" was also specified. Useful in cases when server selection is done by client and based on service names in PADO.
 .TP
 .BI "pado-delay=" delay[,delay1:count1[,delay2:count2[,...]]]
 Specifies delays (also in condition of connection count) to send PADO (ms).
